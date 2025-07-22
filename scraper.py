@@ -16,8 +16,8 @@ INDEX_OID = "4028328c7bf4b5e4017d149764890f47"  # XK100 için gördüğün oid
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 465
-MAIL_TO   = "investment@ktportfoy.com.tr"
-MAIL_CC   = "bayram.salur@ktportfoy.com.tr"
+MAIL_TO   = "ysflkrx@gmail.com"
+MAIL_CC   = ""
 MAIL_SUBJ = f"Günlük KAP Bildirim Raporu {FROM_DATE} - {TO_DATE}"
 
 # Env değişkenlerinden okunacak
