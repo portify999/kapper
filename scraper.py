@@ -192,7 +192,7 @@ def send_mail(to: str, cc: str, subject: str, html_body: str):
     to  = norm(to)
     cc  = norm(cc)
 
-    recipients = list({*to, *cc, *bcc})  # tekrarları sil
+    recipients = list({*to, *cc})  # tekrarları sil
 
     msg = MIMEMultipart()
     msg['From'] = 'Yusuf Ülker'
