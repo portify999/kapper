@@ -196,7 +196,7 @@ def send_mail(to, cc=None, bcc=None, subject="", html_body=""):
     recipients = list({*to, *cc, *bcc})  # tekrarları sil
 
     msg = MIMEMultipart()
-    msg["From"] = f"Yusuf Ülker <{MAIL_USER}>"
+    msg["From"] = "Yusuf Ülker"
     msg["To"]   = ", ".join(to)
     if cc:
         msg["Cc"] = ", ".join(cc)
