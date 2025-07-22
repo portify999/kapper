@@ -2,16 +2,20 @@ name: Keep Cron Alive
 
 on:
   schedule:
-    - cron: '0 7 1 * *'   # Her ayın 1’i 10:00 TRT (UTC+3)
+    - cron: '0 7 1 * *'   # Her ayın 1'i 10:00 TRT
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   keepalive:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.PAT_PUSH }}   # PAT gerekiyor
+          token: ${{ github.token }}
 
       - name: Update keepalive file
         run: |
