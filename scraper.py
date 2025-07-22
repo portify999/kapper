@@ -182,7 +182,7 @@ def send_mail(to: str, cc: str, subject: str, html_body: str):
         raise RuntimeError("MAIL_USER / MAIL_PASS yok. Secrets'a ekleyin.")
 
     msg = MIMEMultipart()
-    msg["From"] = MAIL_USER
+    msg["From"] = "Yusuf Ülker" MAIL_USER
     msg["To"]   = to
     msg["Cc"]   = cc
     msg["Subject"] = subject
