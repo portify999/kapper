@@ -2,9 +2,8 @@ name: KAP Bildirim Scraper
 
 on:
   schedule:
-    - cron: '30 6 * * 1-5'   # Hafta içi (Pzt=1 ... Cum=5) saat 09:30 TRT (UTC 06:30)
+    - cron: '30 6 * * *'   # 09:30 Türkiye saati
   workflow_dispatch:
-
 
 jobs:
   run-scraper:
@@ -19,8 +18,24 @@ jobs:
       with:
         python-version: '3.10'
 
+    # >>>>>>>> MANUEL CACHE ADIMI <<<<<<<<
+    - name: Cache pip
+    #  v4 şu an en güncel sürüm; değişirse dokümantasyona bakıp güncellersin
+      uses: actions/cache@v4
+      with:
+        # pip’in cache klasörü (Ubuntu’da)
+        path: ~/.cache/pip
+        # requirements.txt değiştiğinde cache anahtarı da değişsin diye hash kullanıyoruz
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        # key bulunamazsa yakın anahtarları denesin
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    # >>>>>>>>>>>> BİTTİ <<<<<<<<<<<<<<<<
+
     - name: Install dependencies
-      run: pip install -r requirements.txt
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt  # (pip default olarak ~/.cache/pip'i kullanıyor)
 
     - name: Run script
       env:
