@@ -23,7 +23,7 @@ API_URL   = "https://www.kap.org.tr/tr/api/disclosure/members/byCriteria"
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 465
-MAIL_TO = "ysflkrx@gmail.com"
+MAIL_TO = "ysflkrx@gmail.com,yfsatinalim@gmail.com"
 MAIL_CC = ""
 
 MAIL_USER = os.getenv("MAIL_USER")
