@@ -2,7 +2,7 @@ name: KAP Bildirim Scraper
 
 on:
   schedule:
-    - cron: '0 5 * * *'  # Her gün sabah 08:00 (Türkiye) için UTC 05:00
+    - cron: '30 6 * * *'   # Her gün 09:30 Türkiye saati
   workflow_dispatch:
 
 jobs:
@@ -10,10 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Setup Chrome
-      uses: browser-actions/setup-chrome@v1
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -27,5 +25,4 @@ jobs:
       env:
         MAIL_USER: ${{ secrets.MAIL_USER }}
         MAIL_PASS: ${{ secrets.MAIL_PASS }}
-      run: |
-        python scraper.py
+      run: python scraper.py
