@@ -87,8 +87,8 @@ driver.get("https://www.kap.org.tr/tr/bildirim-sorgu")
 driver.execute_script("window.scrollBy(0, 500);")
 time.sleep(0.5)
 
-Date2_input = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id=":r2:"]')))
-Date1_input = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id=":r0:"]')))
+Date2_input = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id=":r73:"]')))
+Date1_input = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id=":r75:"]')))
 
 write_date_input(Date1_input, start_date)
 wait_and_click("//button[contains(@class, 'MuiPickersDay-root') and contains(@class, 'Mui-selected') and @aria-selected='true']")
