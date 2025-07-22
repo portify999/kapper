@@ -12,7 +12,7 @@ from email.mime.text import MIMEText
 # ================== AYARLAR ==================
 FROM_DATE = "2025-07-21"
 TO_DATE   = "2025-07-22"
-INDEX_OID = "4028328c7bf4b5e4017d149764890f47"  # XK100 için gördüğün oid
+INDEX_OID = "4028328c7bf4b5e4017d149764890f47"   # XK100 OID
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 465
@@ -20,11 +20,10 @@ MAIL_TO   = "ysflkrx@gmail.com"
 MAIL_CC   = ""
 MAIL_SUBJ = f"Günlük KAP Bildirim Raporu {FROM_DATE} - {TO_DATE}"
 
-# Env değişkenlerinden okunacak
 MAIL_USER = os.getenv("MAIL_USER")
 MAIL_PASS = os.getenv("MAIL_PASS")
 
-API_URL = "https://www.kap.org.tr/tr/api/disclosure/members/byCriteria"
+API_URL   = "https://www.kap.org.tr/tr/api/disclosure/members/byCriteria"
 
 payload = {
     "fromDate": FROM_DATE,
@@ -64,8 +63,8 @@ def send_mail(to, cc, subject, html_body):
 
     msg = MIMEMultipart()
     msg["From"] = MAIL_USER
-    msg["To"] = to
-    msg["Cc"] = cc
+    msg["To"]   = to
+    msg["Cc"]   = cc
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
@@ -73,62 +72,58 @@ def send_mail(to, cc, subject, html_body):
         s.login(MAIL_USER, MAIL_PASS)
         s.sendmail(MAIL_USER, [to] + [cc], msg.as_string())
 
-def normalize(df_json):
+def normalize(records):
     """
-    Endpoint'in döndürdüğü JSON yapısını tabloya çevir.
-    Aşağıdaki key'ler senin Network'te gördüğün JSON'a göre uyarlanmalı.
+    Gönderdiğin örnekteki alanlara göre tablonun kolonlarını oluşturur.
     """
     rows = []
-    for r in df_json:
-        company = r.get("company") or {}
+    for r in records:
+        link = f"https://www.kap.org.tr/tr/Bildirim/{r.get('disclosureIndex')}" if r.get("disclosureIndex") else ""
         rows.append({
-            "Tarih": r.get("disclosureDate"),
-            "Başlık": r.get("title"),
-            "Şirket": company.get("companyName"),
-            "Kod": company.get("companyCode"),
-            "Tür": r.get("disclosureClassName"),
-            "Link": f"https://www.kap.org.tr/tr/Bildirim/{r.get('id')}" if r.get("id") else ""
+            "Tarih": r.get("publishDate"),
+            "Başlık": r.get("kapTitle"),
+            "Özet": r.get("summary"),
+            "Konu": r.get("subject"),
+            "Hisse Kod(lar)ı": r.get("stockCodes"),
+            "İlgili Hisseler": r.get("relatedStocks"),
+            "Tür": r.get("disclosureClass"),
+            "Bildirim No": r.get("disclosureIndex"),
+            "Link": link
         })
     return pd.DataFrame(rows)
 
 def main():
     t0 = time.time()
+
     # 1) API çağrısı
     resp = requests.post(API_URL, headers=headers, json=payload, timeout=60)
     print("Status code:", resp.status_code)
-
     resp.raise_for_status()
+
+    # 2) JSON -> liste
     data = resp.json()
-
-    # 2) JSON yapısına göre içerik al
-    # Tipik varyasyonlar:
-    # - {"data": [ {...}, {...} ]}
-    # - {"data": {"content": [ ... ]}}
-    # - [ {...}, {...} ]
     if isinstance(data, dict):
-        if "data" in data:
-            if isinstance(data["data"], list):
-                content = data["data"]
-            elif isinstance(data["data"], dict) and "content" in data["data"]:
-                content = data["data"]["content"]
-            else:
-                content = []
+        # Bazı endpointler dict dönebiliyor, senin örneğin listeydi; yine de esnek olalım
+        if "data" in data and isinstance(data["data"], list):
+            records = data["data"]
         else:
-            # data dict ama 'data' yoksa
-            content = data.get("content", [])
+            records = []
     elif isinstance(data, list):
-        content = data
+        records = data
     else:
-        content = []
+        records = []
 
-    df = normalize(content)
+    # 3) DataFrame
+    df = normalize(records)
 
-    # Temizlik
-    for col in ["Tarih", "Şirket"]:
+    # Temizlik (satır sonu vs)
+    for col in ["Tarih", "Başlık", "Özet", "Konu", "Hisse Kod(lar)ı", "İlgili Hisseler"]:
         if col in df.columns:
             df[col] = df[col].astype(str).str.replace(r"\\n|\n", " ", regex=True)
 
+    # 4) HTML tablo
     html_table = df.to_html(index=False, border=1, justify="center")
+
     html_body = f"""
     <html>
     <head>
@@ -147,7 +142,7 @@ def main():
     </html>
     """
 
-    # 3) Mail gönder
+    # 5) Mail
     send_mail(MAIL_TO, MAIL_CC, MAIL_SUBJ, html_body)
 
     print(f"✅ Tamamlandı. Kayıt: {len(df)}, Süre: {(time.time()-t0)/60:.2f} dk")
