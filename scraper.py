@@ -94,9 +94,7 @@ def calc_date_range() -> tuple[str, str]:
       (Pazartesi veya tatil sonrası mantığı)
     """
     to_d = tr_today()
-    # Eğer bugün de iş dışıysa, en yakın iş gününe geri sar
-    while is_non_business(to_d):
-        to_d -= timedelta(days=1)
+
 
     # Dünden başlayıp geriye doğru iş dışı günleri say
     count_off = 0
