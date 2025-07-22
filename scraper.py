@@ -23,7 +23,7 @@ API_URL   = "https://www.kap.org.tr/tr/api/disclosure/members/byCriteria"
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 465
-MAIL_TO = ["ysflkrx@gmail.com","yfsatinalim@gmail.com"]
+MAIL_TO = ["ysflkrx@gmail.com",'yfsatinalim@gmail.com']
 MAIL_CC = ""
 
 MAIL_USER = os.getenv("MAIL_USER")
@@ -177,11 +177,11 @@ def normalize(records: list) -> pd.DataFrame:
     return df
 
 
-def send_mail(to, cc=None, bcc=None, subject="", html_body=""):
+def send_mail(to: str, cc: str, subject: str, html_body: str):
     if not MAIL_USER or not MAIL_PASS:
-        raise RuntimeError("MAIL_USER / MAIL_PASS yok.")
+        raise RuntimeError("MAIL_USER / MAIL_PASS yok. Secrets'a ekleyin.")
 
-    # String girdileri listeye çevir
+     # String girdileri listeye çevir
     def norm(x):
         if not x:
             return []
@@ -196,17 +196,15 @@ def send_mail(to, cc=None, bcc=None, subject="", html_body=""):
     recipients = list({*to, *cc, *bcc})  # tekrarları sil
 
     msg = MIMEMultipart()
-    msg["From"] = "Yusuf Ulker"
-    msg["To"]   = ", ".join(to)
-    if cc:
-        msg["Cc"] = ", ".join(cc)
+    msg['From'] = 'Yusuf Ülker'
+    msg["To"]   = to
+    msg["Cc"]   = cc
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as s:
         s.login(MAIL_USER, MAIL_PASS)
-        s.send_message(msg, MAIL_USER, recipients, mail_options=['SMTPUTF8'])
-
+        s.sendmail(MAIL_USER, [to] + [cc], msg.as_string())
 
 
 def main():
