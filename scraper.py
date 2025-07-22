@@ -12,12 +12,12 @@ from email.mime.text import MIMEText
 # ================== AYARLAR ==================
 FROM_DATE = "2025-07-21"
 TO_DATE   = "2025-07-22"
-INDEX_OID = "4028328c7bf4b5e4017d149764890f47"   # XK100 OID
+INDEX_OID = "4028328c7bf4b5e4017d149764890f47"   # XK100
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 465
-MAIL_TO   = "ysflkrx@gmail.com"
-MAIL_CC   = ""
+MAIL_TO   = "investment@ktportfoy.com.tr"
+MAIL_CC   = "bayram.salur@ktportfoy.com.tr"
 MAIL_SUBJ = f"Günlük KAP Bildirim Raporu {FROM_DATE} - {TO_DATE}"
 
 MAIL_USER = os.getenv("MAIL_USER")
@@ -74,56 +74,52 @@ def send_mail(to, cc, subject, html_body):
 
 def normalize(records):
     """
-    Gönderdiğin örnekteki alanlara göre tablonun kolonlarını oluşturur.
+    Gelen listeyi istenen kolon başlıklarına göre dönüştür.
     """
     rows = []
     for r in records:
         link = f"https://www.kap.org.tr/tr/Bildirim/{r.get('disclosureIndex')}" if r.get("disclosureIndex") else ""
         rows.append({
             "Tarih": r.get("publishDate"),
-            "Başlık": r.get("kapTitle"),
-            "Özet": r.get("summary"),
+            "Kod": r.get("stockCodes"),
+            "Şirket": r.get("kapTitle"),
             "Konu": r.get("subject"),
-            "Hisse Kod(lar)ı": r.get("stockCodes"),
-            "İlgili Hisseler": r.get("relatedStocks"),
-            "Tür": r.get("disclosureClass"),
-            "Bildirim No": r.get("disclosureIndex"),
-            "Link": link
+            "Özet Bilgi": r.get("summary"),
+            "İlgili Şirketler": r.get("relatedStocks"),
+            # Linki tablo içinde göstermek istersen alt satırı aç:
+            # "Link": link
         })
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    # Sıra numarası kolonu
+    df.insert(0, "#", range(1, len(df) + 1))
+    return df
 
 def main():
     t0 = time.time()
 
-    # 1) API çağrısı
     resp = requests.post(API_URL, headers=headers, json=payload, timeout=60)
     print("Status code:", resp.status_code)
     resp.raise_for_status()
 
-    # 2) JSON -> liste
     data = resp.json()
-    if isinstance(data, dict):
-        # Bazı endpointler dict dönebiliyor, senin örneğin listeydi; yine de esnek olalım
-        if "data" in data and isinstance(data["data"], list):
+    # Beklenen JSON liste
+    if isinstance(data, list):
+        records = data
+    else:
+        # Bazı durumlar için fallback
+        if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
             records = data["data"]
         else:
             records = []
-    elif isinstance(data, list):
-        records = data
-    else:
-        records = []
 
-    # 3) DataFrame
     df = normalize(records)
 
-    # Temizlik (satır sonu vs)
-    for col in ["Tarih", "Başlık", "Özet", "Konu", "Hisse Kod(lar)ı", "İlgili Hisseler"]:
+    # Temizlik
+    for col in ["Tarih", "Kod", "Şirket", "Konu", "Özet Bilgi", "İlgili Şirketler"]:
         if col in df.columns:
-            df[col] = df[col].astype(str).str.replace(r"\\n|\n", " ", regex=True)
+            df[col] = df[col].astype(str).replace(r"\\n|\n", " ", regex=True)
 
-    # 4) HTML tablo
     html_table = df.to_html(index=False, border=1, justify="center")
-
     html_body = f"""
     <html>
     <head>
@@ -142,9 +138,7 @@ def main():
     </html>
     """
 
-    # 5) Mail
     send_mail(MAIL_TO, MAIL_CC, MAIL_SUBJ, html_body)
-
     print(f"✅ Tamamlandı. Kayıt: {len(df)}, Süre: {(time.time()-t0)/60:.2f} dk")
 
 if __name__ == "__main__":
