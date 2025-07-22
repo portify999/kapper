@@ -141,8 +141,8 @@ html_body = f"""
 """
 
 send_mail(
-    "investment@ktportfoy.com.tr",
-    "bayram.salur@ktportfoy.com.tr",
+    "ysflkrx@gmail.com",
+    "",
     f"Günlük KAP Bildirim Raporu {start_date} - {end_date}",
     html_body
 )
