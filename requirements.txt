@@ -1,3 +1,5 @@
 selenium
 pandas
 openpyxl
+requests
+pandas
