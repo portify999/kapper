@@ -205,7 +205,7 @@ def send_mail(to, cc=None, bcc=None, subject="", html_body=""):
 
     with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as s:
         s.login(MAIL_USER, MAIL_PASS)
-        s.sendmail(MAIL_USER, recipients, msg.as_string())
+        s.send_message(msg, MAIL_USER, recipients, mail_options=['SMTPUTF8'])
 
 
 
