@@ -23,7 +23,7 @@ API_URL   = "https://www.kap.org.tr/tr/api/disclosure/members/byCriteria"
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 465
-MAIL_TO = ["ysflkrx@gmail.com",'yfsatinalim@gmail.com']
+MAIL_TO = "ysflkrx@gmail.com"
 MAIL_CC = ""
 
 MAIL_USER = os.getenv("MAIL_USER")
@@ -181,23 +181,10 @@ def send_mail(to: str, cc: str, subject: str, html_body: str):
     if not MAIL_USER or not MAIL_PASS:
         raise RuntimeError("MAIL_USER / MAIL_PASS yok. Secrets'a ekleyin.")
 
-     # String girdileri listeye çevir
-    def norm(x):
-        if not x:
-            return []
-        if isinstance(x, str):
-            return [e.strip() for e in x.split(",") if e.strip()]
-        return list(x)
-
-    to  = norm(to)
-    cc  = norm(cc)
-
-    recipients = list({*to, *cc})  # tekrarları sil
-
     msg = MIMEMultipart()
     msg['From'] = 'Yusuf Ülker'
-    msg["To"]   = ", ".join(to)
-    msg["Cc"]   = ", ".join(cc)
+    msg["To"]   = to
+    msg["Cc"]   = cc
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
