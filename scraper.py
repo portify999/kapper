@@ -1,151 +1,156 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import pandas as pd
-import datetime
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
 import time
+import requests
+import pandas as pd
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import os
 
-start_time = time.perf_counter()
-start_date = "21.07.2025"
-end_date = "22.07.2025"
+# ================== AYARLAR ==================
+FROM_DATE = "2025-07-21"
+TO_DATE   = "2025-07-22"
+INDEX_OID = "4028328c7bf4b5e4017d149764890f47"  # XK100 için gördüğün oid
 
-options = Options()
-options.add_argument('--headless')
-options.add_argument('--no-sandbox')
-options.add_argument('--disable-dev-shm-usage')
-driver = webdriver.Chrome(options=options)
-wait = WebDriverWait(driver, 15)
-results = []
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 465
+MAIL_TO   = "investment@ktportfoy.com.tr"
+MAIL_CC   = "bayram.salur@ktportfoy.com.tr"
+MAIL_SUBJ = f"Günlük KAP Bildirim Raporu {FROM_DATE} - {TO_DATE}"
 
-def wait_and_click(xpath):
-    try:
-        elem = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-        try:
-            elem.click()
-        except:
-            driver.execute_script("arguments[0].click();", elem)
-    except Exception as e:
-        print(f"❌ Tıklama hatası: {xpath}\n{e}")
+# Env değişkenlerinden okunacak
+MAIL_USER = os.getenv("MAIL_USER")
+MAIL_PASS = os.getenv("MAIL_PASS")
 
-def extract_table(result_list):
-    try:
-        table = wait.until(EC.presence_of_element_located((By.ID, 'financialTable')))
-        rows = table.find_elements(By.TAG_NAME, "tr")
-        if len(rows) >= 2:
-            headers = [th.text.strip() for th in rows[0].find_elements(By.TAG_NAME, "th")]
-            for row in rows[1:]:
-                cells = row.find_elements(By.TAG_NAME, "td")
-                record = {headers[i]: cells[i].text.strip() for i in range(len(headers))}
-                result_list.append(record)
-            print("✅ kayıt alındı.")
-    except Exception as e:
-        print(f"❌ tablo hatası: {e}")
+API_URL = "https://www.kap.org.tr/tr/api/disclosure/members/byCriteria"
 
-def write_date_input(input_elem, date_string):
-    driver = input_elem._parent
-    wait = WebDriverWait(driver, 10)
-    gun, ay, yil = map(int, date_string.split('.'))
-    hedef_ts = int(datetime.datetime(yil, ay, gun).timestamp()) * 1000
+payload = {
+    "fromDate": FROM_DATE,
+    "toDate": TO_DATE,
+    "memberType": "IGS",
+    "mkkMemberOidList": [],
+    "inactiveMkkMemberOidList": [],
+    "disclosureClass": "",
+    "subjectList": [],
+    "isLate": "",
+    "mainSector": "",
+    "sector": "",
+    "subSector": "",
+    "marketOid": "",
+    "index": INDEX_OID,
+    "bdkReview": "",
+    "bdkMemberOidList": [],
+    "year": "",
+    "term": "",
+    "ruleType": "",
+    "period": "",
+    "fromSrc": False,
+    "srcCategory": "",
+    "disclosureIndexList": []
+}
 
-    input_elem.click()
-    time.sleep(0.2)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@aria-label[contains(.,'calendar view is open')]]"))).click()
-    time.sleep(0.2)
-    wait.until(EC.element_to_be_clickable((By.XPATH, f"//button[normalize-space(text())='{yil}']"))).click()
-    time.sleep(0.2)
-    wait.until(EC.element_to_be_clickable((By.XPATH, f"//button[normalize-space(text())='{_ay_index_ters(ay)}']"))).click()
-    time.sleep(0.2)
-    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f"button[data-timestamp='{hedef_ts}']:not(:disabled)"))).click()
-    time.sleep(0.2)
-
-def _ay_index_ters(ay):
-    return {
-        1: "Oca", 2: "Şub", 3: "Mar", 4: "Nis", 5: "May", 6: "Haz",
-        7: "Tem", 8: "Ağu", 9: "Eyl", 10: "Eki", 11: "Kas", 12: "Ara"
-    }[ay]
+headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0"
+}
+# ============================================
 
 def send_mail(to, cc, subject, html_body):
+    if not MAIL_USER or not MAIL_PASS:
+        raise RuntimeError("MAIL_USER / MAIL_PASS env değişkenleri yok!")
+
     msg = MIMEMultipart()
-    msg['From'] = os.getenv("MAIL_USER")
-    msg['To'] = to
-    msg['Cc'] = cc
-    msg['Subject'] = subject
-    msg.attach(MIMEText(html_body, 'html'))
+    msg["From"] = MAIL_USER
+    msg["To"] = to
+    msg["Cc"] = cc
+    msg["Subject"] = subject
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(os.getenv("MAIL_USER"), os.getenv("MAIL_PASS"))
-        server.sendmail(msg['From'], [to] + [cc], msg.as_string())
+    with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as s:
+        s.login(MAIL_USER, MAIL_PASS)
+        s.sendmail(MAIL_USER, [to] + [cc], msg.as_string())
 
-# Siteye git
-driver.get("https://www.kap.org.tr/tr/bildirim-sorgu")
-driver.execute_script("window.scrollBy(0, 500);")
-time.sleep(0.5)
+def normalize(df_json):
+    """
+    Endpoint'in döndürdüğü JSON yapısını tabloya çevir.
+    Aşağıdaki key'ler senin Network'te gördüğün JSON'a göre uyarlanmalı.
+    """
+    rows = []
+    for r in df_json:
+        company = r.get("company") or {}
+        rows.append({
+            "Tarih": r.get("disclosureDate"),
+            "Başlık": r.get("title"),
+            "Şirket": company.get("companyName"),
+            "Kod": company.get("companyCode"),
+            "Tür": r.get("disclosureClassName"),
+            "Link": f"https://www.kap.org.tr/tr/Bildirim/{r.get('id')}" if r.get("id") else ""
+        })
+    return pd.DataFrame(rows)
 
-Date2_input = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id=":r73:"]')))
-Date1_input = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id=":r75:"]')))
+def main():
+    t0 = time.time()
+    # 1) API çağrısı
+    resp = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+    print("Status code:", resp.status_code)
 
-write_date_input(Date1_input, start_date)
-wait_and_click("//button[contains(@class, 'MuiPickersDay-root') and contains(@class, 'Mui-selected') and @aria-selected='true']")
-write_date_input(Date2_input, end_date)
-wait_and_click("//button[contains(@class, 'MuiPickersDay-root') and contains(@class, 'Mui-selected') and @aria-selected='true']")
+    resp.raise_for_status()
+    data = resp.json()
 
-wait_and_click("//div[contains(text(), 'Detaylı Sorgulama')]")
-wait_and_click('//*[@id="panel1a-content"]/div/div/div[1]/div[3]/div/div[1]')
-wait_and_click('//*[@id="panel1a-content"]/div/div/div[1]/div[3]/div/div[2]/div/div[62]')
-wait_and_click('//*[@id="detailed-inquiry-content"]/div[1]/div/div/form/div[2]/button[2]')
+    # 2) JSON yapısına göre içerik al
+    # Tipik varyasyonlar:
+    # - {"data": [ {...}, {...} ]}
+    # - {"data": {"content": [ ... ]}}
+    # - [ {...}, {...} ]
+    if isinstance(data, dict):
+        if "data" in data:
+            if isinstance(data["data"], list):
+                content = data["data"]
+            elif isinstance(data["data"], dict) and "content" in data["data"]:
+                content = data["data"]["content"]
+            else:
+                content = []
+        else:
+            # data dict ama 'data' yoksa
+            content = data.get("content", [])
+    elif isinstance(data, list):
+        content = data
+    else:
+        content = []
 
-time.sleep(2)
-extract_table(results)
-time.sleep(1)
+    df = normalize(content)
 
-driver.quit()
-df = pd.DataFrame(results)
-
-if "Tarih" in df.columns:
-    df["Tarih"] = df["Tarih"].str.replace('\n', ' ', regex=True)
-if "İlgili Şirketler" in df.columns:
-    df["İlgili Şirketler"] = df["İlgili Şirketler"].str.replace('\n', ', ', regex=True)
-    df["İlgili Şirketler"] = df["İlgili Şirketler"].str.replace('\n', ', ', regex=True)
-
-remove_cols = ["Tip", "Yıl", "Periyot", "İşlemler"]
-if not df.empty:
-    for col in remove_cols:
+    # Temizlik
+    for col in ["Tarih", "Şirket"]:
         if col in df.columns:
-            df.drop(col, axis=1, inplace=True)
-    print(f"💾 {start_date}-{end_date} aralığındaki kayıtlar: {len(df)}")
-else:
-    print("📭 Kayıtlar boş.")
+            df[col] = df[col].astype(str).str.replace(r"\\n|\n", " ", regex=True)
 
-html_today = df.to_html(index=False, border=1, justify="center")
+    html_table = df.to_html(index=False, border=1, justify="center")
+    html_body = f"""
+    <html>
+    <head>
+        <meta charset="utf-8" />
+        <style>
+            table {{ border-collapse: collapse; font-family: Arial; font-size: 12px; }}
+            th, td {{ border: 1px solid #ddd; padding: 6px; text-align: center; }}
+            th {{ background-color: #f2f2f2; }}
+        </style>
+    </head>
+    <body>
+        <h2>📌 XK100 KAP Bildirimleri ({FROM_DATE} - {TO_DATE})</h2>
+        <p>Toplam: {len(df)}</p>
+        {html_table}
+    </body>
+    </html>
+    """
 
-html_body = f"""
-<html>
-<head>
-    <style>
-        table {{ border-collapse: collapse; font-family: Arial; font-size: 12px; }}
-        th, td {{ border: 1px solid #ddd; padding: 6px; text-align: center; }}
-        th {{ background-color: #f2f2f2; }}
-    </style>
-</head>
-<body>
-    <h2>📌 XK100 KAP Bildirimleri</h2>
-    {html_today}
-</body>
-</html>
-"""
+    # 3) Mail gönder
+    send_mail(MAIL_TO, MAIL_CC, MAIL_SUBJ, html_body)
 
-send_mail(
-    "ysflkrx@gmail.com",
-    "",
-    f"Günlük KAP Bildirim Raporu {start_date} - {end_date}",
-    html_body
-)
+    print(f"✅ Tamamlandı. Kayıt: {len(df)}, Süre: {(time.time()-t0)/60:.2f} dk")
 
-elapsed = (time.perf_counter() - start_time) / 60
-print(f"⏱️ Toplam çalışma süresi: {elapsed:.2f} dakika")
+if __name__ == "__main__":
+    main()
