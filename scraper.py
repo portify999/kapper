@@ -182,7 +182,7 @@ def send_mail(to, cc="", subject="", html_body=""):
     cc_list = [e.strip() for e in cc.split(",")] if cc else []  # boş olabilir
 
     msg = MIMEMultipart()
-    msg["From"] = MAIL_USER
+    msg["From"] = "Yusuf Ülker"
     msg["To"]   = ", ".join(to_list)
     if cc_list:
         msg["Cc"] = ", ".join(cc_list)
