@@ -191,14 +191,13 @@ def send_mail(to: str, cc: str, subject: str, html_body: str):
 
     to  = norm(to)
     cc  = norm(cc)
-    bcc = norm(bcc)
 
     recipients = list({*to, *cc, *bcc})  # tekrarları sil
 
     msg = MIMEMultipart()
     msg['From'] = 'Yusuf Ülker'
-    msg["To"]   = to
-    msg["Cc"]   = cc
+    msg["To"]   = ", ".join(to)
+    msg["Cc"]   = ", ".join(cc)
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
