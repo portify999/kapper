@@ -177,20 +177,24 @@ def normalize(records: list) -> pd.DataFrame:
     return df
 
 
-def send_mail(to: str, cc: str, subject: str, html_body: str):
-    if not MAIL_USER or not MAIL_PASS:
-        raise RuntimeError("MAIL_USER / MAIL_PASS yok. Secrets'a ekleyin.")
+def send_mail(to, cc="", subject="", html_body=""):
+    to_list = [e.strip() for e in to.split(",")]                # "a@x.com,b@y.com"
+    cc_list = [e.strip() for e in cc.split(",")] if cc else []  # boş olabilir
 
     msg = MIMEMultipart()
-    msg['From'] = 'Yusuf Ülker'
-    msg["To"]   = to
-    msg["Cc"]   = cc
+    msg["From"] = MAIL_USER
+    msg["To"]   = ", ".join(to_list)
+    if cc_list:
+        msg["Cc"] = ", ".join(cc_list)
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
+    recipients = to_list + cc_list
+
     with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as s:
         s.login(MAIL_USER, MAIL_PASS)
-        s.sendmail(MAIL_USER, [to] + [cc], msg.as_string())
+        s.sendmail(MAIL_USER, recipients, msg.as_string())
+
 
 
 def main():
