@@ -18,19 +18,6 @@ jobs:
       with:
         python-version: '3.10'
 
-    # >>>>>>>> MANUEL CACHE ADIMI <<<<<<<<
-    - name: Cache pip
-    #  v4 şu an en güncel sürüm; değişirse dokümantasyona bakıp güncellersin
-      uses: actions/cache@v4
-      with:
-        # pip’in cache klasörü (Ubuntu’da)
-        path: ~/.cache/pip
-        # requirements.txt değiştiğinde cache anahtarı da değişsin diye hash kullanıyoruz
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        # key bulunamazsa yakın anahtarları denesin
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    # >>>>>>>>>>>> BİTTİ <<<<<<<<<<<<<<<<
 
     - name: Install dependencies
       run: |
