@@ -3,7 +3,7 @@ name: KAP Bildirim Scraper
 on:
   schedule:
     - cron: '*/5 * * * *'   # 09:30 Türkiye saati
-
+  workflow_dispatch:
 jobs:
   run-scraper:
     runs-on: ubuntu-latest
