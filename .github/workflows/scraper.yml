@@ -2,7 +2,7 @@ name: KAP Bildirim Scraper
 
 on:
   schedule:
-    - cron: '* * * * *'   # 09:30 Türkiye saati
+    - cron: '*/5 * * * *'   # 09:30 Türkiye saati
   workflow_dispatch:
 
 jobs:
