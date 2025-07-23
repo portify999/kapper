@@ -2,7 +2,7 @@ name: KAP Bildirim Scraper
 
 on:
   schedule:
-    - cron: '/5 * * * *'  
+    - cron: '*/5 * * * *'  
   workflow_dispatch:
 jobs:
   run-scraper:
